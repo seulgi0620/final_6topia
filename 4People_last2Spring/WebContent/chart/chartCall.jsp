@@ -58,7 +58,7 @@ $(document).ready(function(){
 
 </script>
 <body>
-<c:forEach items="${chartCall}" var="chartCall">
+<c:forEach items="${chartCall}" var="chartCall"> 
 <button type="button" id="btn_myChart${chartCall.no}" name="btn_myChart" class="btn btn-default" style="width:250px; height:150px" 
 	value="${chartCall.no}">
 	<!-- 스크립트문에서 이 넘버와 일치하는 차트 생성됨-->
