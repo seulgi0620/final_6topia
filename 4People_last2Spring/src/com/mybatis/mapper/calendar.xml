@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mybatis.mapper.calendar">
+	<select id="calList" parameterType="com.vo.CalendarVO" resultType="java.util.Map">
+		SELECT CAL_NO, CAL_TITLE, CAL_STARTDATE, CAL_ENDDATE
+    		  ,CAL_STARTTIME, CAL_ENDTIME, CAL_COLOR
+ 		  FROM CALENDAR
+ 		 <where>
+		<if test="mem_id!=null">
+					AND MEM_ID = #{mem_id}
+		</if>
+		</where>
+	</select>
+	<insert id="calIns" parameterType="java.util.Map">
+		INSERT INTO CALENDAR (CAL_NO, mem_id, CAL_TITLE, CAL_STARTDATE, CAL_ENDDATE)
+               VALUES(SEQ_CALENDAR_NO.NEXTVAL, #{mem_id}, #{cal_title}, #{cal_startdate}, #{cal_enddate})	
+	</insert>
+	<update id="calUpd" parameterType="java.util.Map">
+		UPDATE calendar SET  cal_title = #{cal_title}
+							,cal_startdate = #{cal_startdate}
+							,cal_enddate = #{cal_enddate}	
+	</update>
+	<delete id="calDel" parameterType="java.util.Map">
+		DELETE FROM CALENDAR WHERE CAL_NO = #{cal_no}	
+	</delete>
+	<select id="calTeam" parameterType="com.vo.CalendarVO" resultType="java.util.Map">
+   		SELECT card_date, CARD_DUEDATE, CARD_NAME, tc.TEAM_CODE , CARD_CODE
+      	  FROM CARD c, (SELECT TEAM_CODE,MEM_ID FROM TEAM_MEMBER) tc
+      	<where>
+     	   AND c.TEAM_CODE = tc.TEAM_CODE
+     	   <if test="mem_id!=null">
+       	   AND tc.mem_id = #{mem_id}
+       	   </if>
+      	</where>
+  	  ORDER BY TEAM_CODE 
+	</select>
+	<select id="calTeamCount" parameterType="com.vo.CalendarVO" resultType="java.util.Map">
+		SELECT TEAM_MEMBER.TEAM_CODE, MAX(TEAM_NAME) 
+		  FROM CARD,TEAM_MEMBER, TEAM 
+		 WHERE TEAM_MEMBER.mem_id=#{mem_id} 
+		   AND CARD.TEAM_CODE = TEAM_MEMBER.TEAM_CODE
+		   AND TEAM_MEMBER.TEAM_CODE = TEAM.TEAM_CODE
+      GROUP BY TEAM_MEMBER.TEAM_CODE
+	</select>
+<!-- 	<select id="calTeam2" parameterType="CALLABLE" resultType="map">
+		{call proc_calendarMyTeam(
+			#{mem_id, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+		   ,#{myCalendar, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=myCalendar}
+		   ,#{myTeamCalendar, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=myTeamCalendar}
+		)}		
+	</select> -->
+</mapper>

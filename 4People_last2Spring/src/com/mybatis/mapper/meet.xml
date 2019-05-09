@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.mybatis.mapper.meetMapper">
+<!-- 	<select id="meetRoomIns" parameterType="map"  statementType="CALLABLE" resultType="int">
+	          {call proc_meetingRoomINS(#{mr_image, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_name, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_loc, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_master, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_capacity, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_starttime, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_endtime, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_facility, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+						,#{mr_memo, mode=IN, jdbcType=VARCHAR, javaType=java.lang.String}
+		)}
+	
+	</select> -->
+<!-- 	<select id="meetRoomList" parameterType="com.vo.MeetRoomVO" resultType="map" > -->
+<!-- 		SELECT mr_no,mr_image,mr_name,mr_loc,mr_master,mr_capacity, mr_starttime,mr_endtime,mr_facility,mr_memo -->
+<!-- 		 FROM meeting_room -->
+<!-- 	</select> -->
+	
+	<insert id="meetRoomIns" parameterType="map">
+	INSERT INTO MEETING_ROOM(mr_no,mr_image,mr_name,mr_loc
+							,mr_master,mr_capacity,mr_starttime,mr_endtime
+							,mr_facility,mr_memo,mr_detaileloc) 
+        		VALUES(seq_mr_no.nextval,#{mr_image},#{mr_name},#{mr_loc}
+       				 ,#{mr_master},#{mr_capacity},#{mr_starttime},#{mr_endtime}
+       				 ,#{mr_facility},#{mr_memo},#{mr_detaileloc})
+	</insert>
+
+	<select id="myMeetingRoomNames" parameterType="java.lang.String" resultType="map">
+		select mr_no,mr_name
+		from meeting_room
+		where mr_master = #{mem_id}
+		order by mr_no asc
+	</select>
+	<select id="teamAuthorityList" parameterType="map" resultType="map">
+		select team_name,team_code
+        from team
+        where team_code in(select team_code
+        from team_member
+        where team_code in(select team_code from mr_authority where mr_no =#{mr_no})
+        and mem_id =#{mem_id})
+	</select>
+	
+	<select id="meetingRoomInfo" parameterType="map" resultType="map">
+	select mr_no,mr_loc,mr_capacity,mr_name,mr_startTime,mr_endTime,mr_facility,mr_image,mr_detaileloc,mr_memo
+		from meeting_room
+		where mr_no  = #{mr_no}
+	</select>
+	<update id="roomUpd" parameterType="map">
+	<if test="mr_image!=null">
+		update meeting_room set mr_detaileloc=#{mr_detaileloc},mr_loc=#{mr_loc},mr_starttime=#{mr_starttime},mr_facility=#{mr_facility},mr_name=#{mr_name},mr_memo=#{mr_memo}
+		,mr_master=#{mr_master},mr_capacity=#{mr_capacity},mr_endtime=#{mr_endtime},mr_image=#{mr_image}
+		where mr_no = #{mr_no}
+	</if>
+	<if test="mr_image==null">
+	update meeting_room set mr_detaileloc=#{mr_detaileloc},mr_loc=#{mr_loc},mr_starttime=#{mr_starttime},mr_facility=#{mr_facility},mr_name=#{mr_name},mr_memo=#{mr_memo}
+		,mr_master=#{mr_master},mr_capacity=#{mr_capacity},mr_endtime=#{mr_endtime}
+		where mr_no = #{mr_no}
+	</if>
+	</update>
+	
+	<select id="roomTeamInsert" parameterType="map" resultType="map">
+		select team_code,team_name
+        from team
+        where team_code in ( select team_code
+        from team_member
+        where team_code not in(select team_code from mr_authority where mr_no = #{mr_no})
+        and mem_id = #{mem_id})
+	</select>
+	
+	<insert id="teamAuthorityIns" parameterType="map">
+		insert into MR_AUTHORITY (mr_no,team_code)
+		VALUES (#{mr_no},#{team_code})
+	</insert>
+	
+	<select id="getTeamInfo" parameterType="map" resultType="map">
+		select team_code,team_name
+		from team
+		where team_code = #{team_code}
+	</select>
+	<delete id="roomTeamDelete" parameterType="map">
+		delete from MR_AUTHORITY
+		where mr_no =#{mr_no}
+		and team_code =#{team_code}
+	</delete>
+	<select id="roomSearch" parameterType="map" resultType="map">
+	select mr_no,mr_loc,mr_capacity,mr_name,mr_starttime,mr_endtime,mr_memo,mr_facility,mr_image,mr_detaileloc
+	from meeting_room
+	where mr_no in(select mr_no
+	from MR_AUTHORITY
+	where team_code in (select team_code
+	from team_member
+	where mem_id = #{mem_id}
+	)group by mr_no)
+	<if test="searchInwon!=null">
+	and mr_capacity >=#{searchInwon}
+	</if>
+	
+	</select>
+	<select id="timeResult" parameterType="map" resultType="map">
+		select RE_STARTTIME,re_endtime,mr_no
+		from mr_reservation
+		where mr_no = #{mr_no}
+		and re_hopedate = #{re_hopedate}
+		order by re_starttime asc
+	</select>
+	
+	<select id="availableTeams" parameterType="map" resultType="map">
+		select team_name
+		from team
+		where team_code in (select team_code
+		from mr_authority
+		where mr_no = #{mr_no})
+	</select>
+	
+	<insert id="reservationOk" parameterType="map">
+			insert into mr_reservation (MR_NO,RE_STARTTIME,RE_CODE,RE_HOWMANY,RE_MASTERNAME,RE_ENDTIME,RE_HOPEDATE,RE_PURPOSE,RE_PARTICIPANT,RE_DATE,MEM_ID,MR_TEAMNAME)
+			values (#{mr_no},#{re_starttime},seq_mr_reservation.nextval,#{re_howmany},#{mem_name},#{re_endtime},#{re_hopedate},#{re_purpose},#{re_participant},(select TO_CHAR(sysdate,'YYYY-MM-DD') from dual),#{mem_id},#{mr_teamname})
+	</insert>
+	
+	<select id="myReserVationAfter" parameterType="java.lang.String" resultType="map">
+	<![CDATA[
+		select re.re_starttime,re.re_endtime,re.re_code,re.re_howmany,mr.mr_name,re.re_date,re.re_hopedate,re.mr_teamname
+		from mr_reservation re,meeting_room mr
+		where re.mr_no = mr.mr_no
+		and re.re_hopedate < (select to_char(sysdate,'yyyy-mm-dd') from dual)
+		and re.mem_id = #{mem_id}
+		]]>
+	</select>
+	<select id="myReserVationBefore" parameterType="java.lang.String" resultType="map">
+	<![CDATA[
+		select re.re_starttime,re.re_endtime,re.re_code,re.re_howmany,mr.mr_name,re.re_date,re.re_hopedate,re.mr_teamname
+		from mr_reservation re,meeting_room mr
+		where re.mr_no = mr.mr_no
+		and re.re_hopedate >= (select to_char(sysdate,'yyyy-mm-dd') from dual)
+		and re.mem_id =#{mem_id}
+		]]>
+	</select>
+	<select id="hapDate" parameterType="java.lang.String" resultType="map">
+	<![CDATA[
+		select re.re_starttime,re.re_endtime,re.re_code,re.re_howmany,mr.mr_name,re.re_date,re.re_hopedate,re.mr_teamname
+		from mr_reservation re,meeting_room mr
+		where re.mr_no = mr.mr_no
+		and re.re_hopedate >= (select to_char(sysdate,'yyyy-mm-dd') from dual)
+		and re.mem_id =#{mem_id}
+		union all
+		select re.re_starttime,re.re_endtime,re.re_code,re.re_howmany,mr.mr_name,re.re_date,re.re_hopedate,re.mr_teamname
+		from mr_reservation re,meeting_room mr
+		where re.mr_no = mr.mr_no
+		and re.re_hopedate < (select to_char(sysdate,'yyyy-mm-dd') from dual)
+		and re.mem_id =#{mem_id}
+		]]>
+	</select>
+	<delete id="reservationCancel" parameterType="java.lang.String">
+		delete from mr_reservation
+		where re_code =#{re_code}
+	</delete>
+	   <select id="reCalList" parameterType="com.vo.MeetRoomVO" resultType="java.util.Map">
+      SELECT MR_NO, RE_HOPEDATE||'T'||RE_STARTTIME||':00' as RE_HOPEDATE2, RE_HOPEDATE||'T'||RE_ENDTIME||':00' as RE_HOPEDATE3, RE_ENDTIME, MR_TEAMNAME 
+        FROM MR_RESERVATION 
+       WHERE MR_NO=#{mr_no}
+   </select>
+</mapper>
